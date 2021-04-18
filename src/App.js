@@ -1,23 +1,78 @@
-import logo from './logo.svg';
+import { useEffect, useState } from 'react';
+import Chart from './components/Chart'
 import './App.css';
 
 function App() {
+
+  const [apiData, setApiData] = useState([])
+  const [newData, setNewData] = useState([])
+  const [presentCurrency, setPresentCurrency] = useState('USD')
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
+      .then((res) => res.json())
+      .then((data) => {
+        const countries = Object.entries(data.bpi).map(item => ({
+          name: item[1].code,
+          value: item[1].description
+        }))
+        setApiData(countries)
+      })
+
+      await fetch("https://api.coindesk.com/v1/bpi/historical/close.json")
+      .then(res => res.json())
+      .then(data => {
+        setNewData(data);
+      })
+    }
+
+    fetchData()
+  }, [])
+  
+  console.log(apiData)
+
+  const onCurrencyChange = async (event) => {
+    const currencyCode = event.target.value;
+
+      await fetch(`https://api.coindesk.com/v1/bpi/historical/close.json?currency=${currencyCode}`)
+      .then(res => res.json())
+      .then(data => {
+        setPresentCurrency(currencyCode);
+        setNewData(data);
+      })
+    }
+
+    // const currentValues = Object.values(newData.bpi)
+    
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+      <form>
+        <label>1 Bitcoin Equals</label>
+        <select 
+          name="currencies"
+          onChange={onCurrencyChange}
+          value={presentCurrency}
         >
-          Learn React
-        </a>
-      </header>
+          {
+            apiData.map((currency)=>(
+              <option key={currency.name} value={currency.name}>{currency.value}</option>
+            ))
+          }
+        </select>
+        <h1>
+          {
+            // currentValues[currentValues.length-1].toFixed(2) + " "
+          }
+          {
+             apiData.map(ele => ele.name === presentCurrency ? ele.value : '')
+          }
+        </h1>
+
+      </form>
+
+      <Chart data={newData} />
     </div>
   );
 }
